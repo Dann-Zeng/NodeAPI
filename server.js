@@ -7,6 +7,21 @@ const PORT = process.env.PORT || 3000;
 const JOBS = JSON.parse(fs.readFileSync('./jobs.json', 'utf8'));
 const jobs = JOBS.jobs || [];
 
+// 在顶部配置区域下方添加这个辅助函数
+const saveJobsToFile = async (jobs) => {
+  try {
+    await fs.promises.writeFile(
+      './jobs.json',
+      JSON.stringify({ jobs }, null, 2),
+      'utf8'
+    );
+    return true;
+  } catch (err) {
+    console.error('保存文件失败:', err);
+    return false;
+  }
+};
+
 // 3. 中间件定义
 const logger = (req, res, next) => {
   console.log(`${req.method}  ${req.url}`);
@@ -40,15 +55,16 @@ const getJobByIdHandler = (req, res) => {
 };
 
 // post 创建新数据的方法
-const createJobHandler = (req, res) => {
+const createJobHandler = async (req, res) => {
   let body = '';
   req.on('data', (chunk) => {
     body += chunk.toString();
   });
-  req.on('end', () => {
+  req.on('end', async () => {
     const newJob = JSON.parse(body);
     newJob.id = jobs.length + 1 + '';
     jobs.push(newJob);
+    const saved = await saveJobsToFile(jobs);
     res.statusCode = 201;
     res.write(JSON.stringify(newJob));
     res.end();
@@ -56,7 +72,7 @@ const createJobHandler = (req, res) => {
 };
 
 // delete 删除的方法
-const deleteJobHandler = (req, res) => {
+const deleteJobHandler = async (req, res) => {
   const id = req.url.split('/')[2];
   const jobIndex = jobs.findIndex((job) => job.id === id);
 
@@ -65,6 +81,7 @@ const deleteJobHandler = (req, res) => {
     res.write(JSON.stringify({ message: '要删除的工作没找到' }));
   } else {
     jobs.splice(jobIndex, 1);
+    const saved = await saveJobsToFile(jobs);
     res.statusCode = 200;
     res.write(JSON.stringify({ message: '已经删除' }));
   }
@@ -72,7 +89,7 @@ const deleteJobHandler = (req, res) => {
 };
 
 // 更改数据的方法
-const putJobHandler = (req, res) => {
+const putJobHandler = async (req, res) => {
   const id = req.url.split('/')[2];
   const jobIndex = jobs.findIndex((job) => job.id === id);
 
@@ -87,13 +104,13 @@ const putJobHandler = (req, res) => {
   req.on('data', (chunk) => {
     body += chunk.toString();
   });
-  req.on('end', () => {
+  req.on('end', async () => {
     const updatedJob = JSON.parse(body);
     jobs[jobIndex] = {
       id,
       ...updatedJob,
     };
-
+    const saved = await saveJobsToFile(jobs);
     res.statusCode = 200;
     res.end(JSON.stringify(jobs[jobIndex])); // 直接通过 end() 发送数据
   });
