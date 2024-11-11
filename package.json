@@ -1,0 +1,17 @@
+{
+  "name": "jsonserverforvue",
+  "version": "1.0.0",
+  "description": "AJSONSERVER",
+  "main": "server.js",
+  "scripts": {
+    "start": "nodemon --env-file=.env server.js"
+  },
+  "author": "DANZENG",
+  "license": "MIT",
+  "devDependencies": {
+    "nodemon": "^3.1.7"
+  },
+  "dependencies": {
+    "http": "^0.0.1-security"
+  }
+}
